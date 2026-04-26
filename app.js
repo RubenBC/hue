@@ -9,8 +9,8 @@
 // CONFIGURACIÓN DE SUPABASE
 // ============================================
 // ⚠️ IMPORTANTE: Reemplaza estos valores con los de tu proyecto Supabase
-const SUPABASE_URL = 'https://TU_PROYECTO.supabase.co';
-const SUPABASE_ANON_KEY = 'TU_CLAVE_ANONIMA';
+const SUPABASE_URL = 'sb_publishable_BXTPFRL3QSvZAGQgR6s3gA_AZSsmrpW';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhpcmh0bmhtYm16cWFxcnN2anNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxMDg1NDksImV4cCI6MjA5MjY4NDU0OX0.ul3riHSKF_0P0evCf9lSebnqZcKFQvaH8EL6Yq5NoDw';
 
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
