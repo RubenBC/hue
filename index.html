@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes" />
+  <title>HuertApp - Huerta de Tetuán 🌻</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&family=Nunito+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <!-- Supabase SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<div id="app">
+  
+  <!-- ============================================ -->
+  <!-- PANTALLA DE BIENVENIDA / LOGIN               -->
+  <!-- ============================================ -->
+  
+  <div id="s-welcome" class="screen active">
+    <div class="welcome-hero">
+      <div class="hero-emoji">🌻</div>
+      <h1>Huerta de Tetuán</h1>
+      <p>Gestiona tu huerta urbana con tu comunidad</p>
+    </div>
+    <div class="content">
+      <button class="btn btn-primary btn-full" onclick="showLoginForm()">
+        Iniciar sesión
+      </button>
+      <div class="divider-text">¿Nuevo en la huerta?</div>
+      <button class="btn btn-outline btn-full" onclick="showSolicitarAcceso()">
+        Solicitar acceso
+      </button>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- FORMULARIO DE LOGIN                          -->
+  <!-- ============================================ -->
+  
+  <div id="s-login" class="screen">
+    <div class="topbar">
+      <button class="btn-back" onclick="show('s-welcome')">←</button>
+      <span class="topbar-title">Iniciar sesión</span>
+    </div>
+    <div class="content center-content">
+      <p class="screen-subtitle">Escribe tu nombre para entrar</p>
+      <div class="form-group">
+        <label class="field-label">Tu nombre</label>
+        <input type="text" id="login-nombre" placeholder="Ej: Ana" />
+      </div>
+      <button class="btn btn-primary btn-full" onclick="doLogin()">
+        Entrar a la huerta
+      </button>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- FORMULARIO DE SOLICITUD DE ACCESO            -->
+  <!-- ============================================ -->
+  
+  <div id="s-solicitar" class="screen">
+    <div class="topbar">
+      <button class="btn-back" onclick="show('s-welcome')">←</button>
+      <span class="topbar-title">Solicitar acceso</span>
+    </div>
+    <div class="content">
+      <div class="card-block">
+        <p class="card-desc" style="margin-bottom: 16px;">
+          Completa tus datos para solicitar acceso a la Huerta de Tetuán. 
+          Un administrador revisará tu solicitud.
+        </p>
+        <div class="form-group">
+          <label class="field-label">Tu nombre</label>
+          <input type="text" id="solicitud-nombre" placeholder="Ej: María" />
+        </div>
+        <div class="form-group">
+          <label class="field-label">Elige tu emoji</label>
+          <select id="solicitud-emoji">
+            <option>🌱</option><option>🌻</option><option>🍅</option>
+            <option>🥕</option><option>🌿</option><option>🐝</option>
+            <option>🦋</option><option>🌸</option><option>🥦</option>
+            <option>🍓</option><option>🌾</option><option>🌵</option>
+            <option>🐞</option><option>🪴</option><option>🍆</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="enviarSolicitud()">
+        Enviar solicitud
+      </button>
+      <div id="solicitud-mensaje" class="divider-text" style="margin-top: 16px; display: none;"></div>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- PANTALLA PRINCIPAL (TABS)                    -->
+  <!-- ============================================ -->
+  
+  <div id="s-main" class="screen">
+    
+    <!-- Topbar con nombre huerta y semáforo -->
+    <div class="topbar">
+      <span id="huerta-emoji-top" class="topbar-emoji">🌻</span>
+      <span class="topbar-title" id="huerta-nombre-top">Huerta de Tetuán</span>
+      <div class="semaforo-wrapper" onclick="toggleSemaforoPanel()">
+        <div id="sem-indicator" class="sem-dot sem-rojo"></div>
+        <span id="sem-label" class="sem-label">cerrada</span>
+      </div>
+    </div>
+    
+    <!-- Panel de semáforo (oculto por defecto) -->
+    <div id="sem-panel" class="sem-panel hidden">
+      <div class="sem-panel-title">Estado de la huerta</div>
+      <div class="sem-options">
+        <button class="sem-btn" onclick="cambiarSemaforo('verde')">
+          <span class="sem-dot-lg sem-verde-dot"></span>
+          <span>🟢 Abierta</span>
+        </button>
+        <button class="sem-btn" onclick="cambiarSemaforo('naranja')">
+          <span class="sem-dot-lg sem-naranja-dot"></span>
+          <span>🟠 Alguien va hoy</span>
+        </button>
+        <button class="sem-btn" onclick="cambiarSemaforo('rojo')">
+          <span class="sem-dot-lg sem-rojo-dot"></span>
+          <span>🔴 Cerrada</span>
+        </button>
+      </div>
+    </div>
+    
+    <!-- Área de notificaciones -->
+    <div id="notif-area" class="notif-area"></div>
+    
+    <!-- Contenido dinámico de cada tab -->
+    <div id="main-content" class="main-content"></div>
+    
+    <!-- Bottom navigation -->
+    <nav class="bottomnav">
+      <button class="navbtn" onclick="cambiarTab('tareas', this)">
+        <span class="navicon">✅</span>
+        <span>Tareas</span>
+      </button>
+      <button class="navbtn" onclick="cambiarTab('noticias', this)">
+        <span class="navicon">📰</span>
+        <span>Noticias</span>
+      </button>
+      <button class="navbtn" onclick="cambiarTab('eventos', this)">
+        <span class="navicon">📅</span>
+        <span>Eventos</span>
+      </button>
+      <button class="navbtn" onclick="cambiarTab('huertis', this)">
+        <span class="navicon">👥</span>
+        <span>Huertis</span>
+      </button>
+      <button class="navbtn" onclick="cambiarTab('menu', this)">
+        <span class="navicon">☰</span>
+        <span>Menú</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- SECCIÓN: TAREAS (se carga dinámicamente)    -->
+  <!-- ============================================ -->
+  
+  <div id="contenido-tareas" class="tab-contenido hidden">
+    <div class="filters-area">
+      <div class="filter-row" id="filter-tiempo">
+        <button class="chip active" onclick="setFilterTiempo(this, 'hoy')">Hoy</button>
+        <button class="chip" onclick="setFilterTiempo(this, 'todas')">Todas</button>
+        <button class="chip" onclick="setFilterTiempo(this, 'mis')">Mis tareas</button>
+      </div>
+      <div class="filter-row" id="filter-cat">
+        <button class="chip active" onclick="setFilterCat(this, 'todas')">Todas</button>
+      </div>
+    </div>
+    <div id="task-list" class="task-list"></div>
+    <button class="fab" onclick="mostrarModalTarea()">+</button>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- SECCIÓN: NOTICIAS                            -->
+  <!-- ============================================ -->
+  
+  <div id="contenido-noticias" class="tab-contenido hidden">
+    <div class="content-news">
+      <div id="noticias-list" class="news-list"></div>
+      <div id="admin-noticias-buttons" class="admin-buttons hidden">
+        <button class="btn btn-primary btn-full" onclick="mostrarModalNoticia()">
+          + Nueva noticia
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- SECCIÓN: EVENTOS                             -->
+  <!-- ============================================ -->
+  
+  <div id="contenido-eventos" class="tab-contenido hidden">
+    <div class="content-events">
+      <div id="eventos-list" class="events-list"></div>
+      <div id="admin-eventos-buttons" class="admin-buttons hidden">
+        <button class="btn btn-primary btn-full" onclick="mostrarModalEvento()">
+          + Nuevo evento
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- SECCIÓN: HUERTIS                             -->
+  <!-- ============================================ -->
+  
+  <div id="contenido-huertis" class="tab-contenido hidden">
+    <div class="content">
+      <div id="huertis-list" class="card-block"></div>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- SECCIÓN: MENÚ / ADMIN                        -->
+  <!-- ============================================ -->
+  
+  <div id="contenido-menu" class="tab-contenido hidden">
+    <div class="content">
+      <!-- Mi cuenta -->
+      <div class="section-block">
+        <div class="section-title">Mi cuenta</div>
+        <div class="card-block">
+          <div class="mi-cuenta-header">
+            <div class="avatar-lg" id="menu-avatar">🌱</div>
+            <div>
+              <div class="menu-nombre" id="menu-nombre">Cargando...</div>
+              <span class="badge" id="menu-rol">huerti</span>
+            </div>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="editarMiPerfil()">
+            ✏️ Editar mi perfil
+          </button>
+          <button class="btn btn-danger btn-sm" onclick="borrarMiCuenta()">
+            🗑️ Borrar mi cuenta
+          </button>
+        </div>
+      </div>
+      
+      <!-- Invitar -->
+      <div class="section-block">
+        <div class="section-title">Invitar huertis</div>
+        <div class="card-block">
+          <p class="card-desc">Comparte este enlace con tu comunidad:</p>
+          <div class="share-btns">
+            <button class="btn btn-share" onclick="compartir('whatsapp')">WhatsApp</button>
+            <button class="btn btn-share" onclick="compartir('telegram')">Telegram</button>
+            <button class="btn btn-share" onclick="compartir('email')">Email</button>
+          </div>
+          <p class="card-desc" style="margin-top: 12px">O escanea el QR:</p>
+          <div class="qr-placeholder" id="qr-placeholder">QR<br/>(Compartir enlace)</div>
+        </div>
+      </div>
+      
+      <!-- Zona de administración (solo admins) -->
+      <div id="admin-section" class="section-block hidden">
+        <div class="section-title admin-title">⚙️ Administración</div>
+        <div class="card-block">
+          <button class="btn btn-outline btn-sm" onclick="mostrarSolicitudesPendientes()">
+            📋 Solicitudes pendientes
+            <span id="solicitudes-count" class="badge" style="margin-left: 8px;">0</span>
+          </button>
+          <button class="btn btn-outline btn-sm" onclick="mostrarGestionCategorias()">
+            🏷️ Gestionar categorías
+          </button>
+          <button class="btn btn-outline btn-sm" onclick="mostrarGestionHuertis()">
+            👥 Gestionar huertis
+          </button>
+          <button class="btn btn-outline btn-sm" onclick="mostrarEditarHuerta()">
+            ✏️ Editar información de la huerta
+          </button>
+          <div class="danger-zone">
+            <div class="danger-title">Zona peligrosa</div>
+            <button class="btn btn-danger btn-sm" onclick="confirmarBorrarHuerta()">
+              🗑️ Borrar huerta
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- MODALES                                       -->
+  <!-- ============================================ -->
+  
+  <!-- Modal: Crear/Editar tarea -->
+  <div id="modal-tarea" class="modal-screen hidden">
+    <div class="modal-overlay" onclick="cerrarModal('modal-tarea')">
+      <div class="modal">
+        <div class="modal-header">
+          <span class="modal-title" id="modal-tarea-titulo">Nueva tarea</span>
+          <button class="btn-close" onclick="cerrarModal('modal-tarea')">✕</button>
+        </div>
+        <div class="form-group">
+          <label class="field-label">Nombre</label>
+          <input type="text" id="tarea-nombre" placeholder="Ej: Regar las lechugas" />
+        </div>
+        <div class="form-group">
+          <label class="field-label">Categoría</label>
+          <select id="tarea-categoria"></select>
+        </div>
+        <div class="form-group">
+          <label class="field-label">Asignar a (puedes elegir varios)</label>
+          <select id="tarea-asignados" multiple size="4"></select>
+          <small style="color: var(--text-tertiary);">Ctrl+clic para seleccionar múltiples</small>
+        </div>
+        <div class="form-group">
+          <label class="field-label">Fecha</label>
+          <input type="date" id="tarea-fecha" />
+        </div>
+        <div class="form-group">
+          <label class="field-label">Repetir</label>
+          <select id="tarea-repetir">
+            <option value="">No repetir</option>
+            <option value="diario">Diariamente</option>
+            <option value="semanal">Semanalmente</option>
+            <option value="mensual">Mensualmente</option>
+            <option value="anual">Anualmente</option>
+            <option value="custom">Personalizado</option>
+          </select>
+        </div>
+        <div id="custom-repeat-group" class="form-group hidden">
+          <label class="field-label">Repetir cada</label>
+          <div class="inline-form">
+            <input type="number" id="custom-num" value="2" min="1" style="width: 60px" />
+            <select id="custom-unit">
+              <option value="dias">días</option>
+              <option value="semanas">semanas</option>
+              <option value="meses">meses</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="field-label">Notas</label>
+          <textarea id="tarea-notas" placeholder="Detalles adicionales, enlaces..."></textarea>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline btn-full" onclick="cerrarModal('modal-tarea')">Cancelar</button>
+          <button class="btn btn-primary btn-full" onclick="guardarTarea()">Guardar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Ver notas (salvavidas) -->
+  <div id="modal-notas" class="modal-screen hidden">
+    <div class="modal-overlay" onclick="cerrarModal('modal-notas')">
+      <div class="modal">
+        <div class="modal-header">
+          <span class="modal-title">📝 Notas de la tarea</span>
+          <button class="btn-close" onclick="cerrarModal('modal-notas')">✕</button>
+        </div>
+        <div id="notas-contenido" class="card-desc" style="white-space: pre-wrap;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Solicitudes pendientes (solo admin) -->
+  <div id="modal-solicitudes" class="modal-screen hidden">
+    <div class="modal-overlay" onclick="cerrarModal('modal-solicitudes')">
+      <div class="modal">
+        <div class="modal-header">
+          <span class="modal-title">📋 Solicitudes pendientes</span>
+          <button class="btn-close" onclick="cerrarModal('modal-solicitudes')">✕</button>
+        </div>
+        <div id="solicitudes-lista" class="solicitudes-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Gestionar categorías -->
+  <div id="modal-categorias" class="modal-screen hidden">
+    <div class="modal-overlay" onclick="cerrarModal('modal-categorias')">
+      <div class="modal">
+        <div class="modal-header">
+          <span class="modal-title">🏷️ Gestionar categorías</span>
+          <button class="btn-close" onclick="cerrarModal('modal-categorias')">✕</button>
+        </div>
+        <div id="categorias-lista" class="categorias-list"></div>
+        <div class="section-block" style="margin-top: 16px;">
+          <div class="section-title">Nueva categoría</div>
+          <div class="inline-form">
+            <input type="text" id="nueva-cat-nombre" placeholder="Nombre" style="flex: 1" />
+            <select id="nueva-cat-emoji" style="width: 70px">
+              <option>🌿</option><option>💧</option><option>✂️</option>
+              <option>🌱</option><option>🧹</option><option>🥬</option>
+              <option>🍅</option><option>🌸</option>
+            </select>
+            <button class="btn btn-primary btn-sm" onclick="agregarCategoria()">+</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Gestionar huertis -->
+  <div id="modal-gestion-huertis" class="modal-screen hidden">
+    <div class="modal-overlay" onclick="cerrarModal('modal-gestion-huertis')">
+      <div class="modal">
+        <div class="modal-header">
+          <span class="modal-title">👥 Gestionar huertis</span>
+          <button class="btn-close" onclick="cerrarModal('modal-gestion-huertis')">✕</button>
+        </div>
+        <div id="gestion-huertis-lista" class="gestion-huertis-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Editar huerta -->
+  <div id="modal-editar-huerta" class="modal-screen hidden">
+    <div class="modal-overlay" onclick="cerrarModal('modal-editar-huerta')">
+      <div class="modal">
+        <div class="modal-header">
+          <span class="modal-title">✏️ Editar huerta</span>
+          <button class="btn-close" onclick="cerrarModal('modal-editar-huerta')">✕</button>
+        </div>
+        <div class="form-group">
+          <label class="field-label">Nombre de la huerta</label>
+          <input type="text" id="editar-huerta-nombre" />
+        </div>
+        <div class="form-group">
+          <label class="field-label">Emoji</label>
+          <select id="editar-huerta-emoji">
+            <option>🌻</option><option>🌿</option><option>🥦</option>
+            <option>🍓</option><option>🏡</option><option>🌳</option>
+          </select>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline btn-full" onclick="cerrarModal('modal-editar-huerta')">Cancelar</button>
+          <button class="btn btn-primary btn-full" onclick="guardarEditarHuerta()">Guardar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Noticia/Evento -->
+  <div id="modal-noticia-evento" class="modal-screen hidden">
+    <div class="modal-overlay" onclick="cerrarModal('modal-noticia-evento')">
+      <div class="modal">
+        <div class="modal-header">
+          <span class="modal-title" id="modal-ne-titulo">Nueva noticia</span>
+          <button class="btn-close" onclick="cerrarModal('modal-noticia-evento')">✕</button>
+        </div>
+        <div class="form-group">
+          <label class="field-label">Título</label>
+          <input type="text" id="ne-titulo" />
+        </div>
+        <div class="form-group">
+          <label class="field-label">Contenido</label>
+          <textarea id="ne-contenido" rows="4"></textarea>
+        </div>
+        <div id="evento-fecha-group" class="form-group hidden">
+          <label class="field-label">Fecha del evento</label>
+          <input type="date" id="ne-fecha" />
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline btn-full" onclick="cerrarModal('modal-noticia-evento')">Cancelar</button>
+          <button class="btn btn-primary btn-full" onclick="guardarNoticiaEvento()">Publicar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Confirmación peligrosa -->
+  <div id="modal-confirmar" class="modal-screen hidden">
+    <div class="modal-overlay">
+      <div class="modal">
+        <div class="modal-header">
+          <span class="modal-title">⚠️ Confirmar acción</span>
+        </div>
+        <p id="confirm-msg" style="margin-bottom: 16px;"></p>
+        <div class="form-group">
+          <label class="field-label">Escribe tu nombre para confirmar</label>
+          <input type="text" id="confirm-nombre" placeholder="Tu nombre" />
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline btn-full" onclick="cerrarModal('modal-confirmar')">Cancelar</button>
+          <button class="btn btn-danger btn-full" id="confirm-accion-btn">Confirmar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
